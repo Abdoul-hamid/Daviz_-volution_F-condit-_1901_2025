@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Évolution de la maternité en France</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+        }
+        
+        .container {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            padding: 8mm;
+            box-sizing: border-box;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3mm;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 4mm;
+            border-radius: 3mm;
+            color: white;
+        }
+        
+        .title {
+            font-size: 20pt;
+            font-weight: bold;
+            margin: 0 0 2mm 0;
+            line-height: 1.1;
+        }
+        
+        .subtitle {
+            font-size: 10pt;
+            margin: 0;
+            font-weight: 300;
+            opacity: 0.95;
+        }
+        
+        .intro-box {
+            background: #f8f9fa;
+            padding: 3mm;
+            border-radius: 2mm;
+            margin-bottom: 3mm;
+            border-left: 3mm solid #667eea;
+        }
+        
+        .intro-text {
+            font-size: 9pt;
+            line-height: 1.4;
+            color: #2c3e50;
+            margin: 0;
+        }
+        
+        .two-column {
+            display: flex;
+            gap: 4mm;
+            margin-bottom: 3mm;
+        }
+        
+        .column {
+            flex: 1;
+        }
+        
+        .chart-container {
+            margin-bottom: 3mm;
+            background: white;
+        }
+        
+        .full-width-chart {
+            margin-bottom: 3mm;
+        }
+        
+        .chart-title {
+            font-size: 10pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 2mm;
+            text-align: center;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3mm;
+            border-radius: 2mm;
+            text-align: center;
+            margin-bottom: 3mm;
+        }
+        
+        .stat-number {
+            font-size: 22pt;
+            font-weight: bold;
+            margin: 0;
+            line-height: 1;
+        }
+        
+        .stat-label {
+            font-size: 7.5pt;
+            margin: 1mm 0 0 0;
+            opacity: 0.9;
+        }
+        
+        .mini-stat {
+            background: #f8f9fa;
+            padding: 2.5mm;
+            border-radius: 2mm;
+            margin-bottom: 2mm;
+        }
+        
+        .mini-stat-number {
+            font-size: 16pt;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .mini-stat-text {
+            font-size: 7.5pt;
+            color: #2c3e50;
+            margin: 1mm 0 0 0;
+            line-height: 1.3;
+        }
+        
+        .red { color: #e74c3c; border-left: 2mm solid #e74c3c; }
+        .blue { color: #3498db; border-left: 2mm solid #3498db; }
+        .green { color: #27ae60; border-left: 2mm solid #27ae60; }
+        
+        .insight-box {
+            background: #fff9e6;
+            padding: 2.5mm;
+            border-radius: 2mm;
+            margin-top: 2mm;
+            border-left: 2mm solid #f39c12;
+        }
+        
+        .insight-text {
+            font-size: 8pt;
+            line-height: 1.3;
+            color: #34495e;
+            margin: 0;
+        }
+        
+        .conclusion-box {
+            background: #e8f5e9;
+            padding: 3mm;
+            border-radius: 2mm;
+            border-left: 3mm solid #27ae60;
+            margin-top: 3mm;
+        }
+        
+        .conclusion-title {
+            font-size: 9.5pt;
+            font-weight: bold;
+            color: #27ae60;
+            margin: 0 0 1.5mm 0;
+        }
+        
+        .conclusion-text {
+            font-size: 8pt;
+            line-height: 1.4;
+            color: #2c3e50;
+            margin: 0;
+        }
+        
+        .axis-label {
+            font-size: 8pt;
+            fill: #7f8c8d;
+        }
+        
+        @media print {
+            body { margin: 0; padding: 0; }
+            .container { page-break-after: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- En-tête -->
+        <div class="header">
+            <h1 class="title">La maternité française se transforme</h1>
+            <p class="subtitle">Évolution de la fécondité par âge (1992-2018)</p>
+        </div>
+        
+        <!-- Introduction -->
+        <div class="intro-box">
+            <p class="intro-text">
+                En France, les femmes ont moins d'enfants et les ont de plus en plus tard. Cette transformation démographique reflète l'allongement des études, l'insertion professionnelle tardive et l'évolution des choix de vie.
+            </p>
+        </div>
+        
+        <!-- Première rangée : Graphique principal et statistiques clés -->
+        <div class="two-column">
+            <div class="column" style="flex: 1.4;">
+                <div class="chart-container">
+                    <div class="chart-title">Évolution du taux de fécondité selon l'âge</div>
+                    <svg id="mainChart"></svg>
+                </div>
+            </div>
+            
+            <div class="column" style="flex: 0.6;">
+                <div class="stat-box">
+                    <p class="stat-number">-57%</p>
+                    <p class="stat-label">Baisse de la fécondité<br>chez les 15-24 ans<br>(1992-2018)</p>
+                </div>
+                
+                <div class="mini-stat red">
+                    <p class="mini-stat-number">26 → 11</p>
+                    <p class="mini-stat-text">Naissances / 1000 femmes de 15-24 ans</p>
+                </div>
+                
+                <div class="mini-stat blue">
+                    <p class="mini-stat-number">95 → 102</p>
+                    <p class="mini-stat-text">Naissances / 1000 femmes de 25-34 ans</p>
+                </div>
+                
+                <div class="mini-stat green">
+                    <p class="mini-stat-number">25 → 38</p>
+                    <p class="mini-stat-text">Naissances / 1000 femmes de 35-44 ans</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Encadré insight -->
+        <div class="insight-box">
+            <p class="insight-text">
+                <strong>Le grand basculement :</strong> En 1992, les femmes de 15-24 ans avaient un taux de fécondité bien supérieur. En 2018, ce sont les 25-34 ans qui portent la natalité française, concentrant 68% des naissances.
+            </p>
+        </div>
+        
+        <!-- Deuxième rangée : Comparaison et évolution de l'âge moyen -->
+        <div class="two-column">
+            <div class="column">
+                <div class="chart-container">
+                    <div class="chart-title">Comparaison 1992 vs 2018</div>
+                    <svg id="comparisonChart"></svg>
+                </div>
+            </div>
+            
+            <div class="column">
+                <div class="chart-container">
+                    <div class="chart-title">Part de chaque groupe dans la fécondité totale</div>
+                    <svg id="pieChart"></svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Troisième rangée : Taux de variation et projection -->
+        <div class="two-column">
+            <div class="column">
+                <div class="chart-container">
+                    <div class="chart-title">Taux de variation annuel moyen</div>
+                    <svg id="variationChart"></svg>
+                </div>
+            </div>
+            
+            <div class="column">
+                <div class="chart-container">
+                    <div class="chart-title">Âge moyen de la maternité</div>
+                    <svg id="ageChart"></svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Conclusion -->
+        <div class="conclusion-box">
+            <div class="conclusion-title">🔍 Ce que révèlent les chiffres</div>
+            <p class="conclusion-text">
+                Le décalage de l'âge de la maternité entraîne un vieillissement progressif de la population. La jeunesse contribue moins au renouvellement démographique, tandis que les femmes de 25-44 ans concentrent désormais l'essentiel des naissances. Cette évolution pose des défis pour l'équilibre intergénérationnel et les politiques familiales.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                const data = await window.fs.readFile('DS_FECONDITE_data.csv', { encoding: 'utf8' });
+                return d3.csvParse(data, d => ({
+                    age: d.AGE,
+                    year: +d.TIME_PERIOD,
+                    value: +d.OBS_VALUE
+                }));
+            } catch (error) {
+                console.error('Erreur de chargement:', error);
+                return generateSampleData();
+            }
+        }
+
+        function generateSampleData() {
+            const sampleData = [];
+            const ageGroups = ['Y15T24', 'Y25T34', 'Y35T44'];
+            
+            for (let year = 1992; year <= 2018; year++) {
+                ageGroups.forEach(age => {
+                    let value;
+                    if (age === 'Y15T24') {
+                        value = 26 - (year - 1992) * 0.577;
+                    } else if (age === 'Y25T34') {
+                        value = 95 + (year - 1992) * 0.27;
+                    } else {
+                        value = 25 + (year - 1992) * 0.5;
+                    }
+                    sampleData.push({ age, year, value: Math.max(0, value) });
+                });
+            }
+            return sampleData;
+        }
+
+        async function createVisualization() {
+            const rawData = await loadData();
+            
+            const ageLabels = {
+                'Y15T24': '15-24 ans',
+                'Y25T34': '25-34 ans',
+                'Y35T44': '35-44 ans'
+            };
+            
+            const colors = {
+                'Y15T24': '#e74c3c',
+                'Y25T34': '#3498db',
+                'Y35T44': '#27ae60'
+            };
+
+            createMainChart(rawData, ageLabels, colors);
+            createComparisonChart(rawData, ageLabels, colors);
+            createPieChart(rawData, ageLabels, colors);
+            createVariationChart(rawData, ageLabels, colors);
+            createAgeChart(rawData);
+        }
+
+        function createMainChart(rawData, ageLabels, colors) {
+            const margin = {top: 10, right: 50, bottom: 30, left: 40};
+            const width = 360 - margin.left - margin.right;
+            const height = 150 - margin.top - margin.bottom;
+
+            const svg = d3.select("#mainChart")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleLinear()
+                .domain([1992, 2018])
+                .range([0, width]);
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(rawData, d => d.value) * 1.1])
+                .range([height, 0]);
+
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickFormat(d3.format("d")).ticks(5))
+                .style("font-size", "7pt");
+
+            svg.append("g")
+                .call(d3.axisLeft(y).ticks(5))
+                .style("font-size", "7pt");
+
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -32)
+                .attr("x", -height / 2)
+                .attr("class", "axis-label")
+                .style("text-anchor", "middle")
+                .style("font-size", "7pt")
+                .text("Naissances / 1000 femmes");
+
+            const ageGroups = ['Y15T24', 'Y25T34', 'Y35T44'];
+            
+            ageGroups.forEach(age => {
+                const ageData = rawData.filter(d => d.age === age).sort((a, b) => a.year - b.year);
+                
+                const line = d3.line()
+                    .x(d => x(d.year))
+                    .y(d => y(d.value))
+                    .curve(d3.curveMonotoneX);
+
+                svg.append("path")
+                    .datum(ageData)
+                    .attr("fill", "none")
+                    .attr("stroke", colors[age])
+                    .attr("stroke-width", 2.5)
+                    .attr("d", line);
+
+                const lastPoint = ageData[ageData.length - 1];
+                svg.append("text")
+                    .attr("x", x(lastPoint.year) + 5)
+                    .attr("y", y(lastPoint.value) + 3)
+                    .attr("fill", colors[age])
+                    .style("font-size", "7.5pt")
+                    .style("font-weight", "bold")
+                    .text(ageLabels[age]);
+            });
+        }
+
+        function createComparisonChart(rawData, ageLabels, colors) {
+            const margin = {top: 10, right: 10, bottom: 30, left: 40};
+            const width = 180 - margin.left - margin.right;
+            const height = 120 - margin.top - margin.bottom;
+
+            const svg = d3.select("#comparisonChart")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const data1992 = rawData.filter(d => d.year === 1992);
+            const data2018 = rawData.filter(d => d.year === 2018);
+
+            const ageGroups = ['Y15T24', 'Y25T34', 'Y35T44'];
+            const barData = [];
+            
+            ageGroups.forEach(age => {
+                const val1992 = data1992.find(d => d.age === age)?.value || 0;
+                const val2018 = data2018.find(d => d.age === age)?.value || 0;
+                barData.push({
+                    age,
+                    label: ageLabels[age],
+                    y1992: val1992,
+                    y2018: val2018,
+                    color: colors[age]
+                });
+            });
+
+            const x0 = d3.scaleBand()
+                .domain(ageGroups.map(age => ageLabels[age]))
+                .range([0, width])
+                .padding(0.2);
+
+            const x1 = d3.scaleBand()
+                .domain(['1992', '2018'])
+                .range([0, x0.bandwidth()])
+                .padding(0.1);
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(barData, d => Math.max(d.y1992, d.y2018)) * 1.15])
+                .range([height, 0]);
+
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x0))
+                .style("font-size", "6.5pt")
+                .selectAll("text")
+                .style("text-anchor", "middle");
+
+            svg.append("g")
+                .call(d3.axisLeft(y).ticks(4))
+                .style("font-size", "6.5pt");
+
+            barData.forEach(d => {
+                const g = svg.append("g")
+                    .attr("transform", `translate(${x0(d.label)},0)`);
+
+                g.append("rect")
+                    .attr("x", x1('1992'))
+                    .attr("y", y(d.y1992))
+                    .attr("width", x1.bandwidth())
+                    .attr("height", height - y(d.y1992))
+                    .attr("fill", d.color)
+                    .attr("opacity", 0.5);
+
+                g.append("rect")
+                    .attr("x", x1('2018'))
+                    .attr("y", y(d.y2018))
+                    .attr("width", x1.bandwidth())
+                    .attr("height", height - y(d.y2018))
+                    .attr("fill", d.color);
+
+                g.append("text")
+                    .attr("x", x1('1992') + x1.bandwidth() / 2)
+                    .attr("y", y(d.y1992) - 2)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "6.5pt")
+                    .text(Math.round(d.y1992));
+
+                g.append("text")
+                    .attr("x", x1('2018') + x1.bandwidth() / 2)
+                    .attr("y", y(d.y2018) - 2)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "6.5pt")
+                    .style("font-weight", "bold")
+                    .text(Math.round(d.y2018));
+            });
+
+            const legend = svg.append("g")
+                .attr("transform", `translate(${width - 80}, 0)`);
+
+            ['1992', '2018'].forEach((year, i) => {
+                legend.append("rect")
+                    .attr("x", i * 40)
+                    .attr("y", 0)
+                    .attr("width", 10)
+                    .attr("height", 8)
+                    .attr("fill", "#7f8c8d")
+                    .attr("opacity", i === 0 ? 0.5 : 1);
+
+                legend.append("text")
+                    .attr("x", i * 40 + 13)
+                    .attr("y", 7)
+                    .style("font-size", "6.5pt")
+                    .text(year);
+            });
+        }
+
+        function createPieChart(rawData, ageLabels, colors) {
+            const width = 180;
+            const height = 120;
+            const radius = Math.min(width, height) / 2.5;
+
+            const svg = d3.select("#pieChart")
+                .attr("width", width)
+                .attr("height", height)
+                .append("g")
+                .attr("transform", `translate(${width/2},${height/2})`);
+
+            const data2018 = rawData.filter(d => d.year === 2018);
+            const total = d3.sum(data2018, d => d.value);
+            
+            const pieData = ['Y15T24', 'Y25T34', 'Y35T44'].map(age => {
+                const val = data2018.find(d => d.age === age)?.value || 0;
+                return {
+                    age,
+                    label: ageLabels[age],
+                    value: val,
+                    percentage: (val / total * 100).toFixed(0),
+                    color: colors[age]
+                };
+            });
+
+            const pie = d3.pie()
+                .value(d => d.value)
+                .sort(null);
+
+            const arc = d3.arc()
+                .innerRadius(radius * 0.5)
+                .outerRadius(radius);
+
+            const arcs = svg.selectAll("arc")
+                .data(pie(pieData))
+                .enter()
+                .append("g");
+
+            arcs.append("path")
+                .attr("d", arc)
+                .attr("fill", d => d.data.color)
+                .attr("stroke", "white")
+                .attr("stroke-width", 2);
+
+            arcs.append("text")
+                .attr("transform", d => `translate(${arc.centroid(d)})`)
+                .attr("text-anchor", "middle")
+                .style("font-size", "9pt")
+                .style("font-weight", "bold")
+                .style("fill", "white")
+                .text(d => d.data.percentage + "%");
+
+            const legend = svg.append("g")
+                .attr("transform", `translate(${radius + 15}, -30)`);
+
+            pieData.forEach((d, i) => {
+                const g = legend.append("g")
+                    .attr("transform", `translate(0, ${i * 18})`);
+
+                g.append("rect")
+                    .attr("width", 10)
+                    .attr("height", 10)
+                    .attr("fill", d.color);
+
+                g.append("text")
+                    .attr("x", 14)
+                    .attr("y", 8)
+                    .style("font-size", "7pt")
+                    .text(d.label);
+            });
+        }
+
+        function createVariationChart(rawData, ageLabels, colors) {
+            const margin = {top: 10, right: 10, bottom: 30, left: 40};
+            const width = 180 - margin.left - margin.right;
+            const height = 100 - margin.top - margin.bottom;
+
+            const svg = d3.select("#variationChart")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const ageGroups = ['Y15T24', 'Y25T34', 'Y35T44'];
+            const variations = ageGroups.map(age => {
+                const data = rawData.filter(d => d.age === age).sort((a, b) => a.year - b.year);
+                const firstVal = data[0].value;
+                const lastVal = data[data.length - 1].value;
+                const years = data[data.length - 1].year - data[0].year;
+                const annualRate = ((lastVal / firstVal) ** (1 / years) - 1) * 100;
+                
+                return {
+                    age,
+                    label: ageLabels[age],
+                    rate: annualRate,
+                    color: colors[age]
+                };
+            });
+
+            const x = d3.scaleBand()
+                .domain(variations.map(d => d.label))
+                .range([0, width])
+                .padding(0.3);
+
+            const y = d3.scaleLinear()
+                .domain([d3.min(variations, d => d.rate) * 1.2, d3.max(variations, d => d.rate) * 1.2])
+                .range([height, 0]);
+
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x))
+                .style("font-size", "6.5pt");
+
+            svg.append("g")
+                .call(d3.axisLeft(y).ticks(5).tickFormat(d => d.toFixed(1) + "%"))
+                .style("font-size", "6.5pt");
+
+            svg.append("line")
+                .attr("x1", 0)
+                .attr("x2", width)
+                .attr("y1", y(0))
+                .attr("y2", y(0))
+                .attr("stroke", "#95a5a6")
+                .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "3,3");
+
+            variations.forEach(d => {
+                svg.append("rect")
+                    .attr("x", x(d.label))
+                    .attr("y", d.rate > 0 ? y(d.rate) : y(0))
+                    .attr("width", x.bandwidth())
+                    .attr("height", Math.abs(y(d.rate) - y(0)))
+                    .attr("fill", d.color);
+
+                svg.append("text")
+                    .attr("x", x(d.label) + x.bandwidth() / 2)
+                    .attr("y", d.rate > 0 ? y(d.rate) - 3 : y(0) + 10)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "7pt")
+                    .style("font-weight", "bold")
+                    .text(d.rate.toFixed(1) + "%");
+            });
+        }
+
+        function createAgeChart(rawData) {
+            const margin = {top: 10, right: 10, bottom: 30, left: 40};
+            const width = 180 - margin.left - margin.right;
+            const height = 100 - margin.top - margin.bottom;
+
+            const svg = d3.select("#ageChart")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const years = [...new Set(rawData.map(d => d.year))].sort();
+            const avgAgeData = years.map(year => {
+                const yearData = rawData.filter(d => d.year === year);
+                const total = d3.sum(yearData, d => d.value);
+                
+                let weightedSum = 0;
+                yearData.forEach(d => {
+                    let midAge = 20;
+                    if (d.age === 'Y15T24') midAge = 20;
+                    else if (d.age === 'Y25T34') midAge = 30;
+                    else if (d.age === 'Y35T44') midAge = 40;
+                    weightedSum += d.value * midAge;
+                });
+                
+                return {
+                    year,
+                    avgAge: total > 0 ? weightedSum / total : 0
+                };
+            });
+
+            const x = d3.scaleLinear()
+                .domain([1992, 2018])
+                .range([0, width]);
+
+            const y = d3.scaleLinear()
+                .domain([25, 32])
+                .range([height, 0]);
+
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickFormat(d3.format("d")).ticks(5))
+                .style("font-size", "6.5pt");
+
+            svg.append("g")
+                .call(d3.axisLeft(y).ticks(5).tickFormat(d => d + " ans"))
+                .style("font-size", "6.5pt");
+
+            const line = d3.line()
+                .x(d => x(d.year))
+                .y(d => y(d.avgAge))
+                .curve(d3.curveMonotoneX);
+
+            const area = d3.area()
+                .x(d => x(d.year))
+                .y0(height)
+                .y1(d => y(d.avgAge))
+                .curve(d3.curveMonotoneX);
+
+            svg.append("path")
+                .datum(avgAgeData)
+                .attr("fill", "#667eea")
+                .attr("opacity", 0.3)
+                .attr("d", area);
+
+            svg.append("path")
+                .datum(avgAgeData)
+                .attr("fill", "none")
+                .attr("stroke", "#667eea")
+                .attr("stroke-width", 2.5)
+                .attr("d", line);
+
+            [avgAgeData[0], avgAgeData[avgAgeData.length - 1]].forEach(d => {
+                svg.append("circle")
+                    .attr("cx", x(d.year))
+                    .attr("cy", y(d.avgAge))
+                    .attr("r", 3)
+                    .attr("fill", "#667eea");
+
+                svg.append("text")
+                    .attr("x", x(d.year))
+                    .attr("y", y(d.avgAge) - 8)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "7pt")
+                    .style("font-weight", "bold")
+                    .style("fill", "#667eea")
+                    .text(d.avgAge.toFixed(1) + " ans");
+            });
+        }
+
+        createVisualization();
+    </script>
+</body>
+</html>

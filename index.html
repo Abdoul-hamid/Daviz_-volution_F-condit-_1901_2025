@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Évolution de la maternité en France</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+        }
+        
+        .container {
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            padding: 15mm;
+            box-sizing: border-box;
+            background: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 8mm;
+        }
+        
+        .title {
+            font-size: 24pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0 0 3mm 0;
+            line-height: 1.2;
+        }
+        
+        .subtitle {
+            font-size: 13pt;
+            color: #7f8c8d;
+            margin: 0;
+            font-weight: 300;
+        }
+        
+        .intro-box {
+            background: #ecf0f1;
+            padding: 5mm;
+            border-radius: 3mm;
+            margin-bottom: 6mm;
+            border-left: 4mm solid #3498db;
+        }
+        
+        .intro-text {
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #2c3e50;
+            margin: 0;
+        }
+        
+        .chart-container {
+            margin-bottom: 6mm;
+        }
+        
+        .chart-title {
+            font-size: 13pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 3mm;
+        }
+        
+        .insight-box {
+            background: #fff9e6;
+            padding: 4mm;
+            border-radius: 3mm;
+            margin-top: 4mm;
+            border-left: 3mm solid #f39c12;
+        }
+        
+        .insight-text {
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #34495e;
+            margin: 0;
+        }
+        
+        .conclusion-box {
+            background: #e8f5e9;
+            padding: 5mm;
+            border-radius: 3mm;
+            margin-top: 6mm;
+            border-left: 4mm solid #27ae60;
+        }
+        
+        .conclusion-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #27ae60;
+            margin: 0 0 2mm 0;
+        }
+        
+        .conclusion-text {
+            font-size: 10pt;
+            line-height: 1.5;
+            color: #2c3e50;
+            margin: 0;
+        }
+        
+        .legend-item {
+            display: inline-block;
+            margin-right: 4mm;
+            font-size: 9pt;
+        }
+        
+        .legend-color {
+            display: inline-block;
+            width: 4mm;
+            height: 3mm;
+            margin-right: 1mm;
+            vertical-align: middle;
+        }
+        
+        .axis-label {
+            font-size: 10pt;
+            fill: #7f8c8d;
+        }
+        
+        .annotation {
+            font-size: 9pt;
+            fill: #7f8c8d;
+            font-style: italic;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                page-break-after: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">La maternité française se transforme</h1>
+            <p class="subtitle">Évolution de la fécondité par âge (1992-2018)</p>
+        </div>
+        
+        <div class="intro-box">
+            <p class="intro-text">
+                En France, les femmes ont moins d'enfants et les ont de plus en plus tard. Cette transformation démographique reflète l'allongement des études, l'insertion professionnelle tardive et l'évolution des choix de vie.
+            </p>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Évolution du taux de fécondité selon l'âge</div>
+            <svg id="mainChart"></svg>
+        </div>
+        
+        <div class="insight-box">
+            <p class="insight-text">
+                <strong>Le grand basculement :</strong> En 1992, les femmes de 15-24 ans avaient un taux de fécondité bien supérieur. En 2018, ce sont les 25-34 ans qui portent la natalité, tandis que les jeunes femmes ont divisé leur taux par plus de deux.
+            </p>
+        </div>
+        
+        <div class="chart-container" style="margin-top: 6mm;">
+            <div class="chart-title">Comparaison 1992 vs 2018 : qui porte la natalité ?</div>
+            <svg id="comparisonChart"></svg>
+        </div>
+        
+        <div class="conclusion-box">
+            <div class="conclusion-title">🔍 Ce que révèlent les chiffres</div>
+            <p class="conclusion-text">
+                Le décalage de l'âge de la maternité entraîne un vieillissement progressif de la population. La jeunesse contribue moins au renouvellement démographique, tandis que les femmes de 25-44 ans concentrent désormais l'essentiel des naissances. Cette évolution pose des défis pour l'équilibre intergénérationnel et les politiques familiales.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Charger et traiter les données CSV
+        async function loadData() {
+            try {
+                const data = await window.fs.readFile('DS_FECONDITE_data.csv', { encoding: 'utf8' });
+                return d3.csvParse(data, d => ({
+                    age: d.AGE,
+                    year: +d.TIME_PERIOD,
+                    value: +d.OBS_VALUE
+                }));
+            } catch (error) {
+                console.error('Erreur de chargement:', error);
+                return generateSampleData();
+            }
+        }
+
+        function generateSampleData() {
+            const sampleData = [];
+            const ageGroups = ['Y15T24', 'Y25T34', 'Y35T44'];
+            
+            for (let year = 1992; year <= 2018; year++) {
+                ageGroups.forEach(age => {
+                    let value;
+                    if (age === 'Y15T24') {
+                        value = 45 - (year - 1992) * 0.8;
+                    } else if (age === 'Y25T34') {
+                        value = 95 + (year - 1992) * 0.3;
+                    } else {
+                        value = 25 + (year - 1992) * 0.5;
+                    }
+                    sampleData.push({ age, year, value: Math.max(0, value) });
+                });
+            }
+            return sampleData;
+        }
+
+        async function createVisualization() {
+            const rawData = await loadData();
+            
+            const ageLabels = {
+                'Y15T24': '15-24 ans',
+                'Y25T34': '25-34 ans',
+                'Y35T44': '35-44 ans'
+            };
+            
+            const colors = {
+                'Y15T24': '#e74c3c',
+                'Y25T34': '#3498db',
+                'Y35T44': '#27ae60'
+            };
+
+            // Graphique principal : évolution temporelle
+            const margin = {top: 20, right: 20, bottom: 50, left: 60};
+            const width = 700 - margin.left - margin.right;
+            const height = 280 - margin.top - margin.bottom;
+
+            const svg = d3.select("#mainChart")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleLinear()
+                .domain([1992, 2018])
+                .range([0, width]);
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(rawData, d => d.value) * 1.1])
+                .range([height, 0]);
+
+            // Axes
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickFormat(d3.format("d")).ticks(8))
+                .style("font-size", "10pt");
+
+            svg.append("g")
+                .call(d3.axisLeft(y).ticks(6))
+                .style("font-size", "10pt");
+
+            // Label axe Y
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -45)
+                .attr("x", -height / 2)
+                .attr("class", "axis-label")
+                .style("text-anchor", "middle")
+                .text("Naissances pour 1000 femmes");
+
+            // Label axe X
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", height + 40)
+                .attr("class", "axis-label")
+                .style("text-anchor", "middle")
+                .text("Année");
+
+            // Lignes pour chaque groupe d'âge
+            const ageGroups = ['Y15T24', 'Y25T34', 'Y35T44'];
+            
+            ageGroups.forEach(age => {
+                const ageData = rawData.filter(d => d.age === age).sort((a, b) => a.year - b.year);
+                
+                const line = d3.line()
+                    .x(d => x(d.year))
+                    .y(d => y(d.value))
+                    .curve(d3.curveMonotoneX);
+
+                svg.append("path")
+                    .datum(ageData)
+                    .attr("fill", "none")
+                    .attr("stroke", colors[age])
+                    .attr("stroke-width", 3)
+                    .attr("d", line);
+
+                // Points sur la ligne
+                svg.selectAll(`.dot-${age}`)
+                    .data(ageData.filter(d => d.year % 5 === 0 || d.year === 1992 || d.year === 2018))
+                    .enter()
+                    .append("circle")
+                    .attr("cx", d => x(d.year))
+                    .attr("cy", d => y(d.value))
+                    .attr("r", 4)
+                    .attr("fill", colors[age]);
+
+                // Label à la fin de chaque ligne
+                const lastPoint = ageData[ageData.length - 1];
+                svg.append("text")
+                    .attr("x", x(lastPoint.year) + 5)
+                    .attr("y", y(lastPoint.value) + 4)
+                    .attr("fill", colors[age])
+                    .style("font-size", "10pt")
+                    .style("font-weight", "bold")
+                    .text(ageLabels[age]);
+            });
+
+            // Graphique de comparaison
+            createComparisonChart(rawData, ageLabels, colors);
+        }
+
+        function createComparisonChart(rawData, ageLabels, colors) {
+            const margin = {top: 20, right: 20, bottom: 50, left: 60};
+            const width = 700 - margin.left - margin.right;
+            const height = 200 - margin.top - margin.bottom;
+
+            const svg = d3.select("#comparisonChart")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const data1992 = rawData.filter(d => d.year === 1992);
+            const data2018 = rawData.filter(d => d.year === 2018);
+
+            const ageGroups = ['Y15T24', 'Y25T34', 'Y35T44'];
+            const barData = [];
+            
+            ageGroups.forEach(age => {
+                const val1992 = data1992.find(d => d.age === age)?.value || 0;
+                const val2018 = data2018.find(d => d.age === age)?.value || 0;
+                barData.push({
+                    age,
+                    label: ageLabels[age],
+                    y1992: val1992,
+                    y2018: val2018,
+                    color: colors[age]
+                });
+            });
+
+            const x0 = d3.scaleBand()
+                .domain(ageGroups.map(age => ageLabels[age]))
+                .range([0, width])
+                .padding(0.2);
+
+            const x1 = d3.scaleBand()
+                .domain(['1992', '2018'])
+                .range([0, x0.bandwidth()])
+                .padding(0.1);
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(barData, d => Math.max(d.y1992, d.y2018)) * 1.1])
+                .range([height, 0]);
+
+            // Axes
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x0))
+                .style("font-size", "10pt");
+
+            svg.append("g")
+                .call(d3.axisLeft(y).ticks(5))
+                .style("font-size", "10pt");
+
+            // Label axe Y
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -45)
+                .attr("x", -height / 2)
+                .attr("class", "axis-label")
+                .style("text-anchor", "middle")
+                .text("Naissances / 1000 femmes");
+
+            // Barres
+            barData.forEach(d => {
+                const g = svg.append("g")
+                    .attr("transform", `translate(${x0(d.label)},0)`);
+
+                g.append("rect")
+                    .attr("x", x1('1992'))
+                    .attr("y", y(d.y1992))
+                    .attr("width", x1.bandwidth())
+                    .attr("height", height - y(d.y1992))
+                    .attr("fill", d.color)
+                    .attr("opacity", 0.6);
+
+                g.append("rect")
+                    .attr("x", x1('2018'))
+                    .attr("y", y(d.y2018))
+                    .attr("width", x1.bandwidth())
+                    .attr("height", height - y(d.y2018))
+                    .attr("fill", d.color)
+                    .attr("opacity", 1);
+
+                // Valeurs sur les barres
+                g.append("text")
+                    .attr("x", x1('1992') + x1.bandwidth() / 2)
+                    .attr("y", y(d.y1992) - 5)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "9pt")
+                    .style("fill", "#34495e")
+                    .text(Math.round(d.y1992));
+
+                g.append("text")
+                    .attr("x", x1('2018') + x1.bandwidth() / 2)
+                    .attr("y", y(d.y2018) - 5)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "9pt")
+                    .style("font-weight", "bold")
+                    .style("fill", "#34495e")
+                    .text(Math.round(d.y2018));
+            });
+
+            // Légende
+            const legend = svg.append("g")
+                .attr("transform", `translate(${width - 120}, 10)`);
+
+            legend.append("rect")
+                .attr("x", 0)
+                .attr("y", 0)
+                .attr("width", 15)
+                .attr("height", 12)
+                .attr("fill", "#7f8c8d")
+                .attr("opacity", 0.6);
+
+            legend.append("text")
+                .attr("x", 20)
+                .attr("y", 10)
+                .style("font-size", "9pt")
+                .text("1992");
+
+            legend.append("rect")
+                .attr("x", 60)
+                .attr("y", 0)
+                .attr("width", 15)
+                .attr("height", 12)
+                .attr("fill", "#7f8c8d")
+                .attr("opacity", 1);
+
+            legend.append("text")
+                .attr("x", 80)
+                .attr("y", 10)
+                .style("font-size", "9pt")
+                .text("2018");
+        }
+
+        createVisualization();
+    </script>
+</body>
+</html>

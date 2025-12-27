@@ -1,0 +1,9 @@
+Jeu de données DS_FECONDITE
+
+Période de référence :  1901 - 2025
+
+Nombre de lignes :  30193
+
+Nombre d'observations filtrées :  
+
+Informations importantes
